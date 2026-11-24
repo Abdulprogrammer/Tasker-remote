@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b1020">
+<title>Tasker</title>
+<style>
+  :root {
+    --bg: #0b1020;
+    --card: #161d33;
+    --card-2: #1f2944;
+    --text: #e8edff;
+    --muted: #8a96bd;
+    --accent: #6ea8ff;
+    --accent-2: #8b5cff;
+    --ok: #43d39e;
+    --warn: #ffb648;
+    --err: #ff6b6b;
+    --border: #2a3358;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; min-height: 100dvh; }
+  body { padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); }
+  .wrap { max-width: 560px; margin: 0 auto; }
+  header { display: flex; align-items: center; gap: 12px; padding: 8px 4px 18px; }
+  .logo { width: 40px; height: 40px; border-radius: 11px; flex: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  header h1 { font-size: 20px; margin: 0; font-weight: 700; letter-spacing: .3px; }
+  header .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 14px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 8px;
+    text-transform: uppercase; letter-spacing: .6px; }
+  input, textarea, select { width: 100%; background: var(--card-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px;
+    font-size: 16px; font-family: inherit; outline: none; transition: border-color .15s; }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 88px; line-height: 1.4; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+
+  button { width: 100%; border: none; border-radius: 12px; padding: 14px 16px;
+    font-size: 16px; font-weight: 600; color: white; cursor: pointer; transition: transform .08s, opacity .15s;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+  button:active { transform: scale(.98); }
+  button.ghost { background: var(--card-2); border: 1px solid var(--border); }
+  button:disabled { opacity: .55; }
+
+  .quick { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .quick button { padding: 14px 10px; font-size: 14px; }
+
+  .status { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: none; }
+  .dot.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .dot.err { background: var(--err); }
+  .dot.warn { background: var(--warn); }
+
+  .history { list-style: none; margin: 0; padding: 0; }
+  .history li { padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .history li:last-child { border-bottom: none; }
+  .history .h-row { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+  .history .h-cmd { font-size: 14px; word-break: break-word; }
+  .history .h-time { font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  .badge.success { background: rgba(67,211,158,.15); color: var(--ok); }
+  .badge.pending, .badge.running { background: rgba(255,182,72,.15); color: var(--warn); }
+  .badge.failed-giving-up { background: rgba(255,107,107,.15); color: var(--err); }
+  .empty { color: var(--muted); font-size: 13px; padding: 8px 0; text-align: center; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--card-2); border: 1px solid var(--border); padding: 12px 18px;
+    border-radius: 12px; font-size: 14px; opacity: 0; transition: opacity .2s, transform .2s;
+    pointer-events: none; z-index: 50; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+
+  details { margin-top: 14px; }
+  summary { cursor: pointer; color: var(--muted); font-size: 13px; padding: 8px 0; }
+  .help { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .help code { background: var(--card-2); padding: 1px 5px; border-radius: 5px; color: var(--text); }
+
+  @media (max-width: 380px) { .quick { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">📲</div>
+    <div>
+      <h1>Tasker</h1>
+      <div class="sub">Send tasks to your PC</div>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="status">
+      <span id="netDot" class="dot"></span>
+      <span id="netText">checking connection…</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <label for="topic">ntfy topic (shared with your PC)</label>
+    <input id="topic" type="text" autocomplete="off" autocapitalize="off"
+           spellcheck="false" placeholder="tasker-your-secret-here">
+
+    <label for="server" style="margin-top:14px">ntfy server</label>
+    <input id="server" type="text" spellcheck="false" placeholder="https://ntfy.sh">
+
+    <div class="row" style="margin-top:14px">
+      <button id="saveBtn" class="ghost">Save</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label for="cmd">New task</label>
+    <textarea id="cmd" placeholder="Type an alias like  start-canvix  or any shell command like  cd ~/canvix && npm.cmd"></textarea>
+    <div style="height:12px"></div>
+    <button id="sendBtn">▶ Send to PC</button>
+  </div>
+
+  <div class="card">
+    <label>Quick tasks</label>
+    <div class="quick">
+      <button class="ghost" data-cmd="start-canvix">🚀 start-canvix</button>
+      <button class="ghost" data-cmd="hello">👋 hello (test)</button>
+      <button class="ghost" data-cmd="open-browser">🌐 open browser</button>
+      <button class="ghost" data-cmd="shutdown">⏻ shutdown pc</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Recent activity</label>
+    <ul id="history" class="history">
+      <li class="empty">No activity yet. Send a task to begin.</li>
+    </ul>
+  </div>
+
+  <details>
+    <summary>How does this work?</summary>
+    <div class="help">
+      <p>Your phone and PC never connect directly. Both talk to a free message relay
+      (ntfy.sh) using a shared <em>topic</em> name that acts like a password.</p>
+      <p>When you tap <b>Send</b>, the task is published to that topic. Your PC runs a
+      small daemon (in the background) that polls the topic; when it sees a task, it
+      resolves aliases (e.g. <code>start-canvix</code>) and runs the command. If the PC
+      is off, the task waits; the daemon picks it up next boot. If a task fails, the
+      daemon retries every minute until it succeeds.</p>
+      <p>Status notifications (<code>PC online</code>, <code>✅ done</code>, <code>⚠️ failed</code>)
+      arrive in the ntfy app — install it from your phone's app store for push alerts.</p>
+    </div>
+  </details>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const els = {
+  topic: $("topic"), server: $("server"),
+  saveBtn: $("saveBtn"), sendBtn: $("sendBtn"), cmd: $("cmd"),
+  netDot: $("netDot"), netText: $("netText"),
+  history: $("history"), toast: $("toast"),
+};
+
+// ---- settings persistence ------------------------------------------------
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem("tasker_settings") || "{}");
+    els.topic.value = s.topic || "";
+    els.server.value = s.server || "https://ntfy.sh";
+  } catch { els.server.value = "https://ntfy.sh"; }
+}
+function saveSettings() {
+  localStorage.setItem("tasker_settings", JSON.stringify({
+    topic: els.topic.value.trim(),
+    server: els.server.value.trim(),
+  }));
+  toast("Saved. Remember to use the same topic on your PC.");
+}
+els.saveBtn.addEventListener("click", saveSettings);
+loadSettings();
+
+// ---- toast ----------------------------------------------------------------
+let toastTimer = null;
+function toast(msg) {
+  els.toast.textContent = msg;
+  els.toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => els.toast.classList.remove("show"), 2600);
+}
+
+// ---- send a task ----------------------------------------------------------
+async function sendTask(text) {
+  const topic = els.topic.value.trim();
+  const server = els.server.value.trim() || "https://ntfy.sh";
+  if (!topic) { toast("Set the ntfy topic first."); els.topic.focus(); return; }
+  if (!text) { toast("Type a task first."); els.cmd.focus(); return; }
+
+  els.sendBtn.disabled = true;
+  try {
+    const res = await fetch(`${server}/${encodeURIComponent(topic)}`, {
+      method: "POST",
+      body: text,
+      headers: { "Title": "Tasker command", "Tags": "outbox_tray", "Priority": "3" },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    toast("✅ Sent. Your PC will run it when online.");
+    addHistoryLocal({ raw: text, status: "pending", time: Date.now() });
+    els.cmd.value = "";
+  } catch (e) {
+    toast("❌ Send failed: " + e.message);
+  } finally {
+    els.sendBtn.disabled = false;
+  }
+}
+els.sendBtn.addEventListener("click", () => sendTask(els.cmd.value.trim()));
+els.cmd.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) sendTask(els.cmd.value.trim());
+});
+document.querySelectorAll(".quick button").forEach((b) => {
+  b.addEventListener("click", () => sendTask(b.dataset.cmd));
+});
+
+// ---- show PC status via ntfy poll ----------------------------------------
+function fmtTime(ms) {
+  const d = new Date(ms);
+  return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+function badge(status) {
+  const label = { pending: "queued", running: "running", success: "done",
+    "failed-giving-up": "gave up" }[status] || status;
+  return `<span class="badge ${status}">${label}</span>`;
+}
+function addHistoryLocal(item) {
+  // optimistic local entry; will be reconciled when we poll
+  renderHistory([item, ...window.__history]);
+}
+let pollTimer = null;
+async function pollStatus() {
+  const topic = els.topic.value.trim();
+  const server = els.server.value.trim() || "https://ntfy.sh";
+  if (!topic) {
+    els.netDot.className = "dot warn";
+    els.netText.textContent = "Set the ntfy topic to begin.";
+    return;
+  }
+  // Look back 24h of messages.
+  const since = Math.floor(Date.now() / 1000) - 24 * 3600;
+  let url = `${server}/${encodeURIComponent(topic)}/json?poll=1&since=${since}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const msgs = text.split("\n").filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean).filter((m) => m.event === "message");
+    // Network status dot: online if there is a recent PC-online message within last 10 min.
+    const now = Date.now();
+    const recentOnline = msgs.filter((m) => /online|resuming|back online/i.test(m.title || "")).some((m) => (m.time || 0) > now - 10 * 60 * 1000);
+    els.netDot.className = "dot " + (recentOnline ? "ok" : "warn");
+    els.netText.textContent = recentOnline ? "PC is online and watching." : "PC is offline (task will wait).";
+    // Show last ~12 task-related messages (sent commands + status replies).
+    const relevant = msgs.slice(-12).reverse();
+    renderHistory(relevant);
+  } catch (e) {
+    els.netDot.className = "dot err";
+    els.netText.textContent = "Can't reach relay: " + e.message;
+  }
+}
+window.__history = [];
+function renderHistory(msgs) {
+  window.__history = msgs;
+  if (!msgs.length) {
+    els.history.innerHTML = '<li class="empty">No activity yet. Send a task to begin.</li>';
+    return;
+  }
+  els.history.innerHTML = msgs.map((m) => {
+    const body = (m.message || "").trim();
+    const title = m.title || "";
+    let status = "pending";
+    if (/done|complete|success/i.test(title)) status = "success";
+    else if (/failed|gave up|warning/i.test(title)) status = "failed-giving-up";
+    else if (/online|resuming/i.test(title)) status = "running";
+    const isOurs = /Tasker/i.test(title);
+    return `<li>
+      <div class="h-row">
+        <span class="h-cmd">${escapeHtml(body)}</span>
+        ${isOurs ? badge(status) : ""}
+      </div>
+      <div class="h-time">${escapeHtml(title)} · ${fmtTime(m.time || Date.now())}</div>
+    </li>`;
+  }).join("");
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+pollStatus();
+pollTimer = setInterval(pollStatus, 30000);
+["topic", "server"].forEach((id) => {
+  document.getElementById(id).addEventListener("change", () => { saveSettings(); pollStatus(); });
+});
+</script>
+</body>
+</html>
